@@ -1,0 +1,651 @@
+/* ==========================================================================
+   Making a Difference — globals.css
+   Source: DESIGN.md + SKILL.md (WCAG 2.2 AA, token-driven, keyboard-first)
+
+   Structure
+   1. Foundation tokens   (values taken verbatim from the design files)
+   2. Semantic tokens     (what components use; never raw hex in components)
+   3. Reset + base
+   4. Accessibility helpers
+   5. Components          (link, button, input, list, nav, card, alert)
+   6. Utilities
+   7. Motion preferences
+
+   Usage (Next.js / TypeScript): import "./globals.css" in app/layout.tsx
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. FOUNDATION TOKENS
+   ========================================================================== */
+:root {
+  /* Typography */
+  --font-family-primary: "apercu-light-pro";
+  --font-family-stack: "apercu-light-pro", system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif; /* fallbacks added for safety */
+  --font-size-base: 23px;   /* from spec */
+  --font-weight-base: 400;
+  --font-line-height-base: normal;
+
+  /* Type scale (spec). NOTE: xs is 0px in the source — it is not a usable
+     text size, so no component below references it. */
+  --font-size-xs: 0px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 17px;
+  --font-size-2xl: 18px;
+  --font-size-3xl: 19px;
+  --font-size-4xl: 20px;
+
+  /* Color palette (spec) */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #17171b;
+  --color-text-tertiary: #73737b;
+  --color-text-inverse: #0000ee;
+  --color-surface-base: #000000;
+  --color-surface-muted: #0b5dd0;
+
+  /* Spacing scale (spec) */
+  --space-1: 1px;
+  --space-2: 2px;
+  --space-3: 10px;
+  --space-4: 11px;
+  --space-5: 13px;
+  --space-6: 14px;
+  --space-7: 15px;
+  --space-8: 15.97px;
+
+  /* Radius + motion (spec) */
+  --radius-xs: 8px;
+  --motion-duration-instant: 300ms;
+  --motion-duration-fast: 500ms;
+  --motion-duration-normal: 700ms;
+
+  /* Derived tokens (NOT in the spec; needed so contrast and layout work).
+     Each one is derived from, or fills a gap in, the spec palette. */
+  --color-surface-inverse: #ffffff;          /* light surface for secondary/inverse text */
+  --color-link-on-dark: #8ab4ff;             /* 10:1 on surface.base */
+  --color-feedback-error-on-dark: #ff6b6b;   /* 7.5:1 on surface.base */
+  --color-feedback-error-on-light: #b00020;  /* 7.4:1 on surface.inverse */
+  --space-layout-sm: calc(var(--space-8) * 2);
+  --space-layout-md: calc(var(--space-8) * 3);
+  --space-layout-lg: calc(var(--space-8) * 5);
+  --target-size-min: 44px;                   /* touch target (WCAG 2.2 min is 24px) */
+  --content-max-width: 1200px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+}
+
+
+/* ==========================================================================
+   2. SEMANTIC TOKENS
+   Default context = dark (surface.base). Add .surface-inverse (or
+   data-surface="inverse") to any container to switch to the light context
+   where text.secondary and text.inverse are the correct, high-contrast colors.
+   ========================================================================== */
+:root,
+.surface-base,
+[data-surface="base"] {
+  --bg: var(--color-surface-base);
+  --bg-raised: color-mix(in srgb, var(--color-text-primary) 8%, var(--color-surface-base));
+  --fg: var(--color-text-primary);
+  --fg-muted: var(--color-text-tertiary);   /* 4.6:1 on black — secondary info only */
+  --link: var(--color-link-on-dark);
+  --accent: var(--color-surface-muted);
+  --accent-fg: var(--color-text-primary);   /* 6:1 on accent */
+  --border: color-mix(in srgb, var(--color-text-primary) 35%, transparent);
+  --focus: var(--color-text-primary);
+  --danger: var(--color-feedback-error-on-dark);
+  color-scheme: dark;
+}
+
+.surface-inverse,
+[data-surface="inverse"] {
+  --bg: var(--color-surface-inverse);
+  --bg-raised: color-mix(in srgb, var(--color-text-secondary) 6%, var(--color-surface-inverse));
+  --fg: var(--color-text-secondary);
+  --fg-muted: var(--color-text-tertiary);   /* 4.7:1 on white */
+  --link: var(--color-text-inverse);        /* 8.6:1 on white */
+  --accent: var(--color-surface-muted);
+  --accent-fg: var(--color-text-primary);
+  --border: color-mix(in srgb, var(--color-text-secondary) 40%, transparent);
+  --focus: var(--color-surface-muted);
+  --danger: var(--color-feedback-error-on-light);
+  color-scheme: light;
+}
+
+/* Surface switching must also repaint the container itself */
+.surface-base,
+.surface-inverse,
+[data-surface] {
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+
+/* ==========================================================================
+   3. RESET + BASE
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-family-stack);
+  font-weight: var(--font-weight-base);
+  line-height: var(--font-line-height-base);
+  /* The spec base size is 23px, which is larger than the whole type scale
+     (max 20px) and too large for dense dashboard UI. Body uses scale.lg.
+     To follow the spec literally, change this to var(--font-size-base). */
+  font-size: var(--font-size-lg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-wrap: break-word;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--space-3);
+  font-weight: var(--font-weight-base);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+h1 { font-size: var(--font-size-4xl); }
+h2 { font-size: var(--font-size-3xl); }
+h3 { font-size: var(--font-size-2xl); }
+h4 { font-size: var(--font-size-xl); }
+h5, h6 { font-size: var(--font-size-lg); }
+
+p {
+  margin: 0 0 var(--space-3);
+  max-width: 75ch; /* keep line length under 80 characters */
+}
+
+small { font-size: var(--font-size-sm); }
+
+img, svg, video, canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  border: 0;
+  border-top: var(--space-1) solid var(--border);
+  margin: var(--space-layout-sm) 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-md);
+}
+th, td {
+  padding: var(--space-3);
+  text-align: left;
+  border-bottom: var(--space-1) solid var(--border);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+
+/* ==========================================================================
+   4. ACCESSIBILITY HELPERS
+   ========================================================================== */
+
+/* Visible focus on every interactive element (never removed, only restyled) */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Skip link: first focusable element on every page */
+.skip-link {
+  position: absolute;
+  left: var(--space-3);
+  top: calc(-1 * var(--target-size-min) - var(--space-3));
+  z-index: 1000;
+  padding: var(--space-3) var(--space-7);
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius-xs);
+  text-decoration: underline;
+}
+.skip-link:focus-visible {
+  top: var(--space-3);
+}
+
+/* Visually hidden but available to assistive tech */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Forced-colors (Windows High Contrast) */
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea):focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+
+/* ==========================================================================
+   5. COMPONENTS
+   Every interactive component defines:
+   default · hover · focus-visible · active · disabled · loading · error
+   ========================================================================== */
+
+/* ---- Link ---------------------------------------------------------------
+   States: hover (thicker underline), focus-visible (global ring),
+   active (pressed opacity), disabled (aria-disabled), loading n/a,
+   error n/a. Links are always underlined (color is never the only cue). */
+a {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: var(--space-1);
+  transition: text-decoration-thickness var(--motion-duration-instant) ease;
+}
+a:hover {
+  text-decoration-thickness: var(--space-2);
+}
+a:active {
+  opacity: 0.8;
+}
+a[aria-disabled="true"] {
+  color: var(--fg-muted);
+  pointer-events: none;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+/* ---- Button -------------------------------------------------------------
+   Variants: .btn (primary) · .btn--secondary · .btn--ghost
+   Loading:  aria-busy="true" or data-loading="true"
+   Error:    data-error="true"
+   Touch:    min 44px target                                               */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: var(--target-size-min);
+  min-width: var(--target-size-min);
+  padding: var(--space-3) var(--space-8);
+  border: var(--space-2) solid transparent;
+  border-radius: var(--radius-xs);
+  background-color: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  transition:
+    background-color var(--motion-duration-instant) ease,
+    border-color var(--motion-duration-instant) ease,
+    transform var(--motion-duration-instant) ease;
+}
+.btn:hover {
+  background-color: color-mix(in srgb, var(--accent) 85%, black);
+  text-decoration: none;
+}
+.btn:active {
+  background-color: color-mix(in srgb, var(--accent) 70%, black);
+  transform: translateY(var(--space-1));
+}
+
+.btn--secondary {
+  background-color: transparent;
+  color: var(--fg);
+  border-color: var(--fg);
+}
+.btn--secondary:hover {
+  background-color: color-mix(in srgb, var(--fg) 12%, transparent);
+}
+.btn--secondary:active {
+  background-color: color-mix(in srgb, var(--fg) 20%, transparent);
+}
+
+.btn--ghost {
+  background-color: transparent;
+  color: var(--link);
+  text-decoration: underline;
+}
+.btn--ghost:hover {
+  background-color: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn[aria-busy="true"],
+.btn[data-loading="true"] {
+  cursor: progress;
+  pointer-events: none;
+  color: transparent;            /* label stays in DOM for screen readers */
+}
+.btn[aria-busy="true"]::after,
+.btn[data-loading="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1.25em;
+  height: 1.25em;
+  border: var(--space-2) solid var(--accent-fg);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin var(--motion-duration-normal) linear infinite;
+}
+.btn--secondary[aria-busy="true"]::after,
+.btn--secondary[data-loading="true"]::after {
+  border-color: var(--fg);
+  border-right-color: transparent;
+}
+
+.btn[data-error="true"] {
+  background-color: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ---- Form field ---------------------------------------------------------
+   Markup: <label class="field__label" for="x">…</label>
+           <input class="field__control" id="x" aria-describedby="x-help x-error">
+           <p class="field__help" id="x-help">…</p>
+           <p class="field__error" id="x-error">…</p>
+   Error:  aria-invalid="true" on the control                              */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+.field__label {
+  font-size: var(--font-size-md);
+  color: var(--fg);
+}
+.field__help {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--fg-muted);
+}
+.field__error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--danger);
+}
+
+.field__control,
+input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="file"])),
+select,
+textarea {
+  width: 100%;
+  min-height: var(--target-size-min);
+  padding: var(--space-3) var(--space-6);
+  border: var(--space-2) solid var(--border);
+  border-radius: var(--radius-xs);
+  background-color: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--font-size-lg);  /* >=16px prevents iOS zoom on focus */
+  transition: border-color var(--motion-duration-instant) ease;
+}
+textarea {
+  min-height: calc(var(--target-size-min) * 2);
+  resize: vertical;
+}
+.field__control::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: var(--fg-muted);
+  opacity: 1;
+}
+.field__control:hover,
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--fg);
+}
+.field__control:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--focus);
+}
+.field__control:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.field__control[aria-busy="true"],
+input[aria-busy="true"] {
+  cursor: progress;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--fg) 12%, transparent),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer var(--motion-duration-normal) linear infinite;
+}
+.field__control[aria-invalid="true"],
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 1.25em;
+  height: 1.25em;
+  accent-color: var(--accent);
+}
+
+/* ---- List ---------------------------------------------------------------
+   .list      : plain, spaced list (nav and menu lists)
+   .list--rows: bordered rows with truncation for long content             */
+ul, ol {
+  margin: 0 0 var(--space-3);
+  padding-left: calc(var(--space-8) * 1.5);
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.list > li {
+  padding: var(--space-3) 0;
+}
+.list--rows > li {
+  padding: var(--space-3) var(--space-6);
+  border-bottom: var(--space-1) solid var(--border);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-empty {
+  padding: var(--space-layout-sm);
+  text-align: center;
+  color: var(--fg-muted);
+}
+
+/* ---- Navigation ---------------------------------------------------------
+   <nav class="nav" aria-label="Main">
+     <ul class="nav__list"><li><a class="nav__link" aria-current="page">…
+   Wraps on narrow screens; never hides links behind hover only.           */
+.nav {
+  background-color: var(--bg);
+  border-bottom: var(--space-1) solid var(--border);
+}
+.nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-8);
+  list-style: none;
+}
+.nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-size-min);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  text-decoration: none;
+}
+.nav__link:hover {
+  background-color: color-mix(in srgb, var(--fg) 12%, transparent);
+  text-decoration: underline;
+}
+.nav__link:active {
+  background-color: color-mix(in srgb, var(--fg) 20%, transparent);
+}
+.nav__link[aria-current="page"] {
+  background-color: var(--accent);
+  color: var(--accent-fg);
+  text-decoration: none;
+}
+.nav__link[aria-disabled="true"] {
+  color: var(--fg-muted);
+  pointer-events: none;
+}
+
+/* ---- Card / panel ------------------------------------------------------- */
+.card {
+  min-width: 0;
+  padding: var(--space-8);
+  border: var(--space-1) solid var(--border);
+  border-radius: var(--radius-xs);
+  background-color: var(--bg-raised);
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Alert / inline message ---------------------------------------------
+   Use role="alert" for errors, role="status" for neutral info.             */
+.alert {
+  padding: var(--space-6) var(--space-8);
+  border: var(--space-2) solid var(--border);
+  border-radius: var(--radius-xs);
+  background-color: var(--bg-raised);
+  color: var(--fg);
+}
+.alert--error {
+  border-color: var(--danger);
+  color: var(--fg);
+}
+.alert--error::before {
+  content: "Error: ";
+  color: var(--danger);
+}
+
+
+/* ==========================================================================
+   6. UTILITIES
+   ========================================================================== */
+.container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-8);
+}
+
+.stack > * + * { margin-top: var(--space-8); }
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.grid-auto {
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.text-muted  { color: var(--fg-muted); }
+.text-danger { color: var(--danger); }
+.text-sm     { font-size: var(--font-size-sm); }
+.text-md     { font-size: var(--font-size-md); }
+
+@media (min-width: 768px) {
+  .container { padding-inline: var(--space-layout-sm); }
+}
+
+
+/* ==========================================================================
+   7. MOTION
+   ========================================================================== */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
